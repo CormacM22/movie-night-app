@@ -108,6 +108,9 @@ export default function Lobby({ onJoined }) {
         alignItems: "center",
         justifyContent: "center",
         padding: "24px",
+        paddingTop: "max(24px, calc(env(safe-area-inset-top) + 16px))",
+        paddingBottom: "max(24px, calc(env(safe-area-inset-bottom) + 16px))",
+        boxSizing: "border-box",
         fontFamily: "'Inter', sans-serif",
       }}
     >

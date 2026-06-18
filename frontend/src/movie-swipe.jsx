@@ -182,6 +182,9 @@ function MatchScreen({ movie, onContinue }) {
         alignItems: "center",
         justifyContent: "center",
         padding: "24px",
+        paddingTop: "max(24px, calc(env(safe-area-inset-top) + 16px))",
+        paddingBottom: "max(24px, calc(env(safe-area-inset-bottom) + 16px))",
+        boxSizing: "border-box",
         fontFamily: "'Inter', sans-serif",
         textAlign: "center",
       }}
@@ -211,6 +214,9 @@ function NoMatchScreen({ leaderboard }) {
         alignItems: "center",
         justifyContent: "center",
         padding: "24px",
+        paddingTop: "max(24px, calc(env(safe-area-inset-top) + 16px))",
+        paddingBottom: "max(24px, calc(env(safe-area-inset-bottom) + 16px))",
+        boxSizing: "border-box",
         fontFamily: "'Inter', sans-serif",
         textAlign: "center",
       }}
@@ -306,6 +312,9 @@ export default function MovieSwipe({ deck, activeCount, match, noMatch, onSwipe 
         flexDirection: "column",
         alignItems: "center",
         padding: "32px 16px",
+        paddingTop: "max(32px, calc(env(safe-area-inset-top) + 16px))",
+        paddingBottom: "max(32px, calc(env(safe-area-inset-bottom) + 16px))",
+        boxSizing: "border-box",
         fontFamily: "'Inter', sans-serif",
         overscrollBehavior: "none",
       }}
