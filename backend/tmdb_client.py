@@ -4,12 +4,17 @@ movies and normalizes them into our own Movie shape (see models.py).
 
 Genre IDs from TMDB are mapped to readable names via a small cache fetched
 once at startup, since /discover/movie only returns genre_ids, not names.
+
+Per-movie details (runtime + watch providers) are cached in memory with a
+TTL, since the same popular movies tend to reappear across many sessions —
+without caching, every new room would re-fetch identical data from TMDB.
 """
 
 import asyncio
 import os
+import time
 from datetime import date, timedelta
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 import httpx
 from dotenv import load_dotenv
@@ -37,8 +42,18 @@ WATCH_REGION = "IE"
 # include something a friend could see is still playing nearby.
 THEATRICAL_WINDOW_DAYS = 120
 
+# How long cached per-movie details (runtime + watch providers) stay valid.
+# Runtime never changes; watch providers do shift over time (a title can
+# leave Netflix), so this TTL is chosen as a reasonable middle ground rather
+# than caching the two separately — simpler, and a day's staleness on watch
+# providers is an acceptable tradeoff for this app's casual use case.
+DETAILS_CACHE_TTL_SECONDS = 24 * 60 * 60  # 24 hours
+
 _genre_cache: Optional[dict] = None  # genre_id -> name
 _genre_name_to_id_cache: Optional[dict] = None  # lowercase name -> id
+
+# movie_id -> (fetched_at_timestamp, (runtime, watch_providers))
+_details_cache: dict = {}
 
 
 async def _get_genre_map(client: httpx.AsyncClient) -> dict:
@@ -118,6 +133,26 @@ async def _get_watch_providers(client: httpx.AsyncClient, movie_id: int) -> Opti
         return None
 
 
+async def _get_movie_details(client: httpx.AsyncClient, movie_id: int) -> Tuple[int, Optional[WatchProviders]]:
+    """Returns (runtime, watch_providers) for a movie, using the in-memory
+    cache when a fresh-enough entry exists. This is the unit of work we
+    parallelize across an entire deck — each movie's two underlying TMDB
+    calls (runtime, watch providers) still run concurrently via gather."""
+    cached = _details_cache.get(movie_id)
+    if cached is not None:
+        fetched_at, details = cached
+        if time.time() - fetched_at < DETAILS_CACHE_TTL_SECONDS:
+            return details
+
+    runtime, watch_providers = await asyncio.gather(
+        _get_runtime(client, movie_id),
+        _get_watch_providers(client, movie_id),
+    )
+    details = (runtime, watch_providers)
+    _details_cache[movie_id] = (time.time(), details)
+    return details
+
+
 async def fetch_movie_deck(
     page: int = 1,
     min_rating: float = 6.5,
@@ -160,8 +195,15 @@ async def fetch_movie_deck(
         resp.raise_for_status()
         results = resp.json().get("results", [])
 
+        # Fetch every movie's details (runtime + watch providers) concurrently
+        # across the WHOLE deck, not one movie at a time — this is the main
+        # latency win, on top of the cache avoiding repeat calls entirely.
+        details_list = await asyncio.gather(
+            *[_get_movie_details(client, item["id"]) for item in results]
+        )
+
         movies = []
-        for item in results:
+        for item, (runtime, watch_providers) in zip(results, details_list):
             genre_names = [genre_map.get(gid, "") for gid in item.get("genre_ids", [])]
             primary_genre = next((g for g in genre_names if g), "Unknown")
 
@@ -173,13 +215,6 @@ async def fetch_movie_deck(
 
             # overview comes straight from /discover/movie, no extra call needed
             overview = (item.get("overview") or "").strip() or None
-
-            # runtime and watch providers each need their own API call;
-            # run them concurrently so we're not paying for both sequentially
-            runtime, watch_providers = await asyncio.gather(
-                _get_runtime(client, item["id"]),
-                _get_watch_providers(client, item["id"]),
-            )
 
             movies.append(
                 Movie(

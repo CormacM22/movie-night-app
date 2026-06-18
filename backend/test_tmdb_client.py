@@ -155,7 +155,54 @@ async def run_filter_params_test():
     print("✅ tmdb_client filter params test passed!")
 
 
+async def run_caching_test():
+    """Confirms repeated fetches for the same movie reuse the cache instead
+    of hitting the network again, and that an expired entry triggers a
+    fresh fetch — catching both 'cache never used' and 'cache never
+    expires' regressions."""
+    tmdb_client._genre_cache = None
+    tmdb_client._details_cache.clear()
+    tmdb_client.TMDB_API_KEY = "fake-key-for-test"
+
+    call_counts = {"runtime": 0, "providers": 0}
+
+    async def counting_get(self, url, params=None, **kwargs):
+        if "/movie/999/watch/providers" in url:
+            call_counts["providers"] += 1
+            return FakeResponse(FAKE_WATCH_PROVIDERS)
+        if "/movie/999" in url:
+            call_counts["runtime"] += 1
+            return FakeResponse(FAKE_MOVIE_DETAILS)
+        return await fake_get(self, url, params=params, **kwargs)
+
+    with patch("httpx.AsyncClient.get", new=counting_get):
+        await tmdb_client.fetch_movie_deck()
+    assert call_counts == {"runtime": 1, "providers": 1}, f"Expected one call each on first fetch, got {call_counts}"
+
+    # Second fetch for the same movie should hit the cache, not the network
+    with patch("httpx.AsyncClient.get", new=counting_get):
+        await tmdb_client.fetch_movie_deck()
+    assert call_counts == {"runtime": 1, "providers": 1}, (
+        f"Expected cache to prevent new calls on second fetch, got {call_counts}"
+    )
+
+    # Force the cached entry to look expired, then confirm a third fetch re-hits the network
+    movie_id = 999
+    fetched_at, details = tmdb_client._details_cache[movie_id]
+    expired_timestamp = fetched_at - tmdb_client.DETAILS_CACHE_TTL_SECONDS - 1
+    tmdb_client._details_cache[movie_id] = (expired_timestamp, details)
+
+    with patch("httpx.AsyncClient.get", new=counting_get):
+        await tmdb_client.fetch_movie_deck()
+    assert call_counts == {"runtime": 2, "providers": 2}, (
+        f"Expected expired cache entry to trigger fresh calls, got {call_counts}"
+    )
+
+    print("✅ tmdb_client caching test passed!")
+
+
 if __name__ == "__main__":
     asyncio.run(run_test())
     asyncio.run(run_filter_params_test())
     asyncio.run(run_watch_region_test())
+    asyncio.run(run_caching_test())
