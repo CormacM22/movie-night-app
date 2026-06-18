@@ -307,10 +307,15 @@ export default function MovieSwipe({ deck, activeCount, match, noMatch, onSwipe 
         alignItems: "center",
         padding: "32px 16px",
         fontFamily: "'Inter', sans-serif",
+        overscrollBehavior: "none",
       }}
     >
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;600&display=swap');
+        html, body {
+          overscroll-behavior: none;
+          touch-action: manipulation;
+        }
       `}</style>
 
       <div style={{ textAlign: "center", marginBottom: "28px" }}>
@@ -365,9 +370,12 @@ export default function MovieSwipe({ deck, activeCount, match, noMatch, onSwipe 
                 onMouseUp={handleEnd}
                 onMouseLeave={() => isDragging && handleEnd()}
                 onTouchStart={(e) => handleStart(e.touches[0].clientX)}
-                onTouchMove={(e) => handleMove(e.touches[0].clientX)}
+                onTouchMove={(e) => {
+                  e.preventDefault(); // stop the page from panning/scrolling while dragging the card
+                  handleMove(e.touches[0].clientX);
+                }}
                 onTouchEnd={handleEnd}
-                style={{ position: "absolute", inset: 0 }}
+                style={{ position: "absolute", inset: 0, touchAction: "none" }}
               >
                 <MovieCard movie={topMovie} isTop={true} dragX={dragX} dragRotate={rotate} />
               </div>
