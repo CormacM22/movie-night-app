@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { createSession, joinSession } from "./api";
+import { useState, useEffect } from "react";
+import { createSession, joinSession, fetchGenres } from "./api";
 
 const colors = {
   bg: "#15131A",
@@ -38,6 +38,19 @@ const buttonStyle = (bg) => ({
   marginTop: "10px",
 });
 
+const chipStyle = (selected) => ({
+  padding: "8px 14px",
+  borderRadius: "20px",
+  border: `1px solid ${selected ? colors.orange : colors.border}`,
+  background: selected ? colors.orange : "transparent",
+  color: selected ? "#15131A" : colors.text,
+  fontFamily: "'Inter', sans-serif",
+  fontSize: "13px",
+  fontWeight: selected ? 600 : 400,
+  cursor: "pointer",
+  whiteSpace: "nowrap",
+});
+
 export default function Lobby({ onJoined }) {
   const [mode, setMode] = useState("choose"); // choose | create | join
   const [name, setName] = useState("");
@@ -45,6 +58,12 @@ export default function Lobby({ onJoined }) {
   const [createdCode, setCreatedCode] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [genres, setGenres] = useState([]);
+  const [selectedGenre, setSelectedGenre] = useState(null); // null = any genre
+
+  useEffect(() => {
+    fetchGenres().then(setGenres);
+  }, []);
 
   const completeJoin = async (roomCode) => {
     if (!name.trim()) {
@@ -70,7 +89,7 @@ export default function Lobby({ onJoined }) {
     setLoading(true);
     setError("");
     try {
-      const { code: newCode } = await createSession(1.0);
+      const { code: newCode } = await createSession(1.0, selectedGenre);
       setCreatedCode(newCode);
     } catch (err) {
       setError("Could not reach the server — is the backend running?");
@@ -128,6 +147,29 @@ export default function Lobby({ onJoined }) {
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
+
+            {genres.length > 0 && (
+              <div style={{ marginTop: "16px" }}>
+                <p style={{ color: colors.muted, fontSize: "12px", letterSpacing: "1px", marginBottom: "8px" }}>
+                  GENRE (OPTIONAL)
+                </p>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                  <span style={chipStyle(selectedGenre === null)} onClick={() => setSelectedGenre(null)}>
+                    Any genre
+                  </span>
+                  {genres.map((g) => (
+                    <span
+                      key={g.id}
+                      style={chipStyle(selectedGenre === g.id)}
+                      onClick={() => setSelectedGenre(selectedGenre === g.id ? null : g.id)}
+                    >
+                      {g.name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <button style={buttonStyle(colors.orange)} onClick={handleCreate} disabled={loading}>
               {loading ? "CREATING..." : "CREATE ROOM"}
             </button>

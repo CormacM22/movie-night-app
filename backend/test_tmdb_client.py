@@ -69,5 +69,44 @@ async def run_test():
     print(f"   {m}")
 
 
+async def run_filter_params_test():
+    """Verifies that excluding in-theater movies and filtering by genre
+    actually sends the right query params to TMDB's discover endpoint —
+    catching regressions where the filter is silently dropped."""
+    tmdb_client._genre_cache = None
+    tmdb_client.TMDB_API_KEY = "fake-key-for-test"
+
+    captured_params = {}
+
+    async def capturing_get(self, url, params=None, **kwargs):
+        if "discover/movie" in url:
+            captured_params.update(params or {})
+        return await fake_get(self, url, params=params, **kwargs)
+
+    with patch("httpx.AsyncClient.get", new=capturing_get):
+        await tmdb_client.fetch_movie_deck(genre_id=28, exclude_in_theaters=True)
+
+    assert "release_date.lte" in captured_params, "Expected release_date.lte to be set when excluding in-theater movies"
+    assert captured_params["with_genres"] == 28, f"Expected with_genres=28, got {captured_params.get('with_genres')}"
+
+    # Confirm the cutoff is roughly THEATRICAL_WINDOW_DAYS in the past, not today
+    from datetime import date
+    cutoff = date.fromisoformat(captured_params["release_date.lte"])
+    days_ago = (date.today() - cutoff).days
+    assert days_ago == tmdb_client.THEATRICAL_WINDOW_DAYS, (
+        f"Expected cutoff {tmdb_client.THEATRICAL_WINDOW_DAYS} days ago, got {days_ago}"
+    )
+
+    # Now confirm exclude_in_theaters=False omits the date filter entirely
+    captured_params.clear()
+    tmdb_client._genre_cache = None
+    with patch("httpx.AsyncClient.get", new=capturing_get):
+        await tmdb_client.fetch_movie_deck(exclude_in_theaters=False)
+    assert "release_date.lte" not in captured_params, "release_date.lte should be omitted when exclude_in_theaters=False"
+
+    print("✅ tmdb_client filter params test passed!")
+
+
 if __name__ == "__main__":
     asyncio.run(run_test())
+    asyncio.run(run_filter_params_test())

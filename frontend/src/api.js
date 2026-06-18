@@ -3,11 +3,18 @@
 
 const API_BASE = "http://127.0.0.1:8000";
 
-export async function createSession(matchThreshold = 1.0) {
+export async function fetchGenres() {
+  const res = await fetch(`${API_BASE}/genres`);
+  if (!res.ok) return []; // genre picker just won't show options; not fatal
+  const data = await res.json();
+  return data.genres || [];
+}
+
+export async function createSession(matchThreshold = 1.0, genreId = null) {
   const res = await fetch(`${API_BASE}/sessions`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ match_threshold: matchThreshold }),
+    body: JSON.stringify({ match_threshold: matchThreshold, genre_id: genreId }),
   });
   if (!res.ok) throw new Error("Could not create session");
   return res.json(); // { code }

@@ -10,6 +10,7 @@ Run with: uvicorn main:app --reload
 """
 
 import uuid
+from typing import Optional
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -17,6 +18,7 @@ from pydantic import BaseModel
 
 from models import SwipeDirection
 from session_store import store
+from tmdb_client import get_genre_list
 
 app = FastAPI(title="Movie Night")
 
@@ -32,6 +34,7 @@ app.add_middleware(
 
 class CreateSessionRequest(BaseModel):
     match_threshold: float = 1.0  # 1.0 = unanimous required
+    genre_id: Optional[int] = None  # None = no genre filter, any genre
 
 
 class JoinSessionRequest(BaseModel):
@@ -50,9 +53,20 @@ def movie_to_dict(movie):
     }
 
 
+@app.get("/genres")
+async def list_genres():
+    """Returns TMDB's genre list for the lobby's genre picker.
+    Falls back to an empty list if TMDB is unreachable — the frontend
+    treats that as 'show a generic picker with no genre filter option'."""
+    try:
+        return {"genres": await get_genre_list()}
+    except Exception:
+        return {"genres": []}
+
+
 @app.post("/sessions")
 async def create_session(req: CreateSessionRequest):
-    session = await store.create_session(match_threshold=req.match_threshold)
+    session = await store.create_session(match_threshold=req.match_threshold, genre_id=req.genre_id)
     return {"code": session.code}
 
 
