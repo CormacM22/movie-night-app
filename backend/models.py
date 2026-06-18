@@ -26,6 +26,7 @@ class Movie:
     rating: float
     runtime_minutes: int
     poster_url: Optional[str] = None
+    overview: Optional[str] = None
 
 
 @dataclass

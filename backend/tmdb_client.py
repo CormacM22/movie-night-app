@@ -128,6 +128,9 @@ async def fetch_movie_deck(
 
             runtime = await _get_runtime(client, item["id"])
 
+            # overview comes straight from /discover/movie, no extra call needed
+            overview = (item.get("overview") or "").strip() or None
+
             movies.append(
                 Movie(
                     id=str(item["id"]),
@@ -137,6 +140,7 @@ async def fetch_movie_deck(
                     rating=round(item.get("vote_average", 0), 1),
                     runtime_minutes=runtime,
                     poster_url=poster_url,
+                    overview=overview,
                 )
             )
 

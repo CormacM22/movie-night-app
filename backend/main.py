@@ -50,6 +50,7 @@ def movie_to_dict(movie):
         "rating": movie.rating,
         "runtime_minutes": movie.runtime_minutes,
         "poster_url": movie.poster_url,
+        "overview": movie.overview,
     }
 
 

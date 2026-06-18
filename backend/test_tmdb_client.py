@@ -21,6 +21,7 @@ FAKE_DISCOVER_RESULTS = {
             "genre_ids": [28],
             "vote_average": 7.34,
             "poster_path": "/abc123.jpg",
+            "overview": "A test synopsis about things blowing up.",
         }
     ]
 }
@@ -64,6 +65,7 @@ async def run_test():
     assert m.rating == 7.3, f"Expected rounded rating 7.3, got {m.rating}"
     assert m.runtime_minutes == 118, f"Expected runtime 118, got {m.runtime_minutes}"
     assert m.poster_url == "https://image.tmdb.org/t/p/w500/abc123.jpg"
+    assert m.overview == "A test synopsis about things blowing up.", f"Expected overview text, got {m.overview!r}"
 
     print("✅ tmdb_client normalization test passed!")
     print(f"   {m}")

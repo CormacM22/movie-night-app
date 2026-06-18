@@ -26,7 +26,9 @@ function gradientFor(id) {
   return GRADIENTS[n % GRADIENTS.length];
 }
 
-function MovieCard({ movie, isTop, dragX, dragRotate }) {
+function MovieCard({ movie, isTop, dragX, dragRotate, flipped, onToggleFlip }) {
+  const showBack = isTop && flipped;
+
   return (
     <div
       style={{
@@ -50,123 +52,217 @@ function MovieCard({ movie, isTop, dragX, dragRotate }) {
         userSelect: "none",
       }}
     >
-      <div style={{ position: "relative", width: "100%", flex: "1 1 auto", minHeight: 0 }}>
-        {movie.poster_url ? (
-          <img
-            src={movie.poster_url}
-            alt={movie.title}
-            draggable={false}
-            style={{ width: "100%", height: "100%", objectFit: "cover", pointerEvents: "none" }}
-          />
-        ) : (
-          <div
-            style={{
-              width: "100%",
-              height: "100%",
-              background: gradientFor(movie.id),
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.35)" strokeWidth="1.5">
-              <rect x="2" y="3" width="20" height="18" rx="2" />
-              <path d="M7 3v18M17 3v18M2 8h5M2 16h5M17 8h5M17 16h5" />
-            </svg>
-          </div>
-        )}
+      {showBack ? (
         <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            background: `linear-gradient(to bottom, transparent 60%, ${colors.surface} 100%)`,
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleFlip();
           }}
-        />
-
-        {isTop && dragX > 30 && (
-          <div
-            style={{
-              position: "absolute",
-              top: "24px",
-              right: "24px",
-              padding: "8px 16px",
-              border: `3px solid ${colors.orange}`,
-              borderRadius: "8px",
-              color: colors.orange,
-              fontFamily: "'Archivo Black', sans-serif",
-              fontSize: "22px",
-              letterSpacing: "1px",
-              transform: "rotate(12deg)",
-              opacity: Math.min(dragX / 100, 1),
-            }}
-          >
-            WATCH
-          </div>
-        )}
-        {isTop && dragX < -30 && (
-          <div
-            style={{
-              position: "absolute",
-              top: "24px",
-              left: "24px",
-              padding: "8px 16px",
-              border: `3px solid ${colors.blue}`,
-              borderRadius: "8px",
-              color: colors.blue,
-              fontFamily: "'Archivo Black', sans-serif",
-              fontSize: "22px",
-              letterSpacing: "1px",
-              transform: "rotate(-12deg)",
-              opacity: Math.min(-dragX / 100, 1),
-            }}
-          >
-            PASS
-          </div>
-        )}
-      </div>
-
-      <div
-        style={{
-          padding: "14px 20px 16px",
-          flex: "0 0 auto",
-          display: "flex",
-          flexDirection: "column",
-          gap: "8px",
-        }}
-      >
-        <div>
+          style={{
+            flex: "1 1 auto",
+            minHeight: 0,
+            display: "flex",
+            flexDirection: "column",
+            padding: "20px",
+            boxSizing: "border-box",
+            cursor: "pointer",
+          }}
+        >
           <h2
             style={{
               fontFamily: "'Archivo Black', sans-serif",
-              fontSize: "18px",
+              fontSize: "16px",
               color: colors.text,
               margin: 0,
-              lineHeight: 1.25,
               textTransform: "uppercase",
               letterSpacing: "0.5px",
-              display: "-webkit-box",
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: "vertical",
-              overflow: "hidden",
             }}
           >
             {movie.title}
           </h2>
-          <p style={{ color: colors.muted, fontSize: "13px", margin: "4px 0 0", fontFamily: "'Inter', sans-serif" }}>
+          <p style={{ color: colors.muted, fontSize: "12px", margin: "4px 0 16px", fontFamily: "'Inter', sans-serif" }}>
             {movie.year} · {movie.genre}
           </p>
-        </div>
-        <div style={{ display: "flex", gap: "16px", fontFamily: "'Inter', sans-serif", fontSize: "13px", color: colors.text }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-            <Star size={14} fill="#FFD166" stroke="none" />
-            {movie.rating}
+          <div style={{ flex: "1 1 auto", minHeight: 0, overflowY: "auto" }}>
+            <p
+              style={{
+                color: colors.text,
+                fontSize: "14px",
+                lineHeight: 1.6,
+                fontFamily: "'Inter', sans-serif",
+                margin: 0,
+              }}
+            >
+              {movie.overview || "No synopsis available for this one — guess you'll have to find out together."}
+            </p>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "5px", color: colors.muted }}>
-            <Clock size={14} />
-            {movie.runtime_minutes ? `${movie.runtime_minutes} min` : "Runtime unknown"}
-          </div>
+          <p
+            style={{
+              color: colors.muted,
+              fontSize: "11px",
+              fontFamily: "'Inter', sans-serif",
+              textAlign: "center",
+              marginTop: "12px",
+              marginBottom: 0,
+              letterSpacing: "0.5px",
+            }}
+          >
+            TAP TO GO BACK
+          </p>
         </div>
-      </div>
+      ) : (
+        <>
+          <div style={{ position: "relative", width: "100%", flex: "1 1 auto", minHeight: 0 }}>
+            {movie.poster_url ? (
+              <img
+                src={movie.poster_url}
+                alt={movie.title}
+                draggable={false}
+                style={{ width: "100%", height: "100%", objectFit: "cover", pointerEvents: "none" }}
+              />
+            ) : (
+              <div
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  background: gradientFor(movie.id),
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.35)" strokeWidth="1.5">
+                  <rect x="2" y="3" width="20" height="18" rx="2" />
+                  <path d="M7 3v18M17 3v18M2 8h5M2 16h5M17 8h5M17 16h5" />
+                </svg>
+              </div>
+            )}
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+                background: `linear-gradient(to bottom, transparent 60%, ${colors.surface} 100%)`,
+              }}
+            />
+
+            {isTop && movie.overview && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleFlip();
+                }}
+                aria-label="Show synopsis"
+                style={{
+                  position: "absolute",
+                  bottom: "12px",
+                  right: "12px",
+                  width: "30px",
+                  height: "30px",
+                  borderRadius: "50%",
+                  border: "none",
+                  background: "rgba(21,19,26,0.55)",
+                  color: colors.text,
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: "14px",
+                  fontWeight: 600,
+                  fontStyle: "italic",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                  backdropFilter: "blur(2px)",
+                }}
+              >
+                i
+              </button>
+            )}
+
+            {isTop && dragX > 30 && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: "24px",
+                  right: "24px",
+                  padding: "8px 16px",
+                  border: `3px solid ${colors.orange}`,
+                  borderRadius: "8px",
+                  color: colors.orange,
+                  fontFamily: "'Archivo Black', sans-serif",
+                  fontSize: "22px",
+                  letterSpacing: "1px",
+                  transform: "rotate(12deg)",
+                  opacity: Math.min(dragX / 100, 1),
+                }}
+              >
+                WATCH
+              </div>
+            )}
+            {isTop && dragX < -30 && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: "24px",
+                  left: "24px",
+                  padding: "8px 16px",
+                  border: `3px solid ${colors.blue}`,
+                  borderRadius: "8px",
+                  color: colors.blue,
+                  fontFamily: "'Archivo Black', sans-serif",
+                  fontSize: "22px",
+                  letterSpacing: "1px",
+                  transform: "rotate(-12deg)",
+                  opacity: Math.min(-dragX / 100, 1),
+                }}
+              >
+                PASS
+              </div>
+            )}
+          </div>
+
+          <div
+            style={{
+              padding: "14px 20px 16px",
+              flex: "0 0 auto",
+              display: "flex",
+              flexDirection: "column",
+              gap: "8px",
+            }}
+          >
+            <div>
+              <h2
+                style={{
+                  fontFamily: "'Archivo Black', sans-serif",
+                  fontSize: "18px",
+                  color: colors.text,
+                  margin: 0,
+                  lineHeight: 1.25,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.5px",
+                  display: "-webkit-box",
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: "vertical",
+                  overflow: "hidden",
+                }}
+              >
+                {movie.title}
+              </h2>
+              <p style={{ color: colors.muted, fontSize: "13px", margin: "4px 0 0", fontFamily: "'Inter', sans-serif" }}>
+                {movie.year} · {movie.genre}
+              </p>
+            </div>
+            <div style={{ display: "flex", gap: "16px", fontFamily: "'Inter', sans-serif", fontSize: "13px", color: colors.text }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+                <Star size={14} fill="#FFD166" stroke="none" />
+                {movie.rating}
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: "5px", color: colors.muted }}>
+                <Clock size={14} />
+                {movie.runtime_minutes ? `${movie.runtime_minutes} min` : "Runtime unknown"}
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -193,7 +289,7 @@ function MatchScreen({ movie, onContinue }) {
         IT'S A MATCH
       </p>
       <div style={{ width: "220px", height: "340px", marginBottom: "20px", position: "relative" }}>
-        <MovieCard movie={movie} isTop={false} dragX={0} dragRotate={0} />
+        <MovieCard movie={movie} isTop={false} dragX={0} dragRotate={0} flipped={false} onToggleFlip={() => {}} />
       </div>
       <h2 style={{ color: colors.text, fontFamily: "'Archivo Black', sans-serif", fontSize: "22px", textTransform: "uppercase" }}>
         {movie.title}
@@ -262,6 +358,7 @@ export default function MovieSwipe({ deck, activeCount, match, noMatch, onSwipe 
   const [localDeck, setLocalDeck] = useState(deck);
   const [dragX, setDragX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  const [flipped, setFlipped] = useState(false);
   const startX = useRef(0);
 
   if (match) return <MatchScreen movie={match} />;
@@ -296,6 +393,7 @@ export default function MovieSwipe({ deck, activeCount, match, noMatch, onSwipe 
     setTimeout(() => {
       setLocalDeck((prev) => prev.slice(1));
       setDragX(0);
+      setFlipped(false); // next card always starts poster-side up
     }, 200);
   };
 
@@ -371,22 +469,30 @@ export default function MovieSwipe({ deck, activeCount, match, noMatch, onSwipe 
           </div>
         ) : (
           <>
-            {nextMovie && <MovieCard movie={nextMovie} isTop={false} dragX={0} dragRotate={0} />}
+            {nextMovie && <MovieCard movie={nextMovie} isTop={false} dragX={0} dragRotate={0} flipped={false} onToggleFlip={() => {}} />}
             {topMovie && (
               <div
-                onMouseDown={(e) => handleStart(e.clientX)}
-                onMouseMove={(e) => handleMove(e.clientX)}
-                onMouseUp={handleEnd}
-                onMouseLeave={() => isDragging && handleEnd()}
-                onTouchStart={(e) => handleStart(e.touches[0].clientX)}
+                onMouseDown={(e) => !flipped && handleStart(e.clientX)}
+                onMouseMove={(e) => !flipped && handleMove(e.clientX)}
+                onMouseUp={() => !flipped && handleEnd()}
+                onMouseLeave={() => !flipped && isDragging && handleEnd()}
+                onTouchStart={(e) => !flipped && handleStart(e.touches[0].clientX)}
                 onTouchMove={(e) => {
+                  if (flipped) return;
                   e.preventDefault(); // stop the page from panning/scrolling while dragging the card
                   handleMove(e.touches[0].clientX);
                 }}
-                onTouchEnd={handleEnd}
+                onTouchEnd={() => !flipped && handleEnd()}
                 style={{ position: "absolute", inset: 0, touchAction: "none" }}
               >
-                <MovieCard movie={topMovie} isTop={true} dragX={dragX} dragRotate={rotate} />
+                <MovieCard
+                  movie={topMovie}
+                  isTop={true}
+                  dragX={dragX}
+                  dragRotate={rotate}
+                  flipped={flipped}
+                  onToggleFlip={() => setFlipped((f) => !f)}
+                />
               </div>
             )}
           </>
@@ -394,9 +500,10 @@ export default function MovieSwipe({ deck, activeCount, match, noMatch, onSwipe 
       </div>
 
       {localDeck.length > 0 && (
-        <div style={{ display: "flex", gap: "24px", marginTop: "32px" }}>
+        <div style={{ display: "flex", gap: "24px", marginTop: "32px", opacity: flipped ? 0.3 : 1, transition: "opacity 0.2s" }}>
           <button
-            onClick={() => commitSwipe("left")}
+            onClick={() => !flipped && commitSwipe("left")}
+            disabled={flipped}
             style={{
               width: "56px",
               height: "56px",
@@ -405,13 +512,14 @@ export default function MovieSwipe({ deck, activeCount, match, noMatch, onSwipe 
               background: "transparent",
               color: colors.blue,
               fontSize: "24px",
-              cursor: "pointer",
+              cursor: flipped ? "default" : "pointer",
             }}
           >
             ✕
           </button>
           <button
-            onClick={() => commitSwipe("right")}
+            onClick={() => !flipped && commitSwipe("right")}
+            disabled={flipped}
             style={{
               width: "56px",
               height: "56px",
@@ -420,7 +528,7 @@ export default function MovieSwipe({ deck, activeCount, match, noMatch, onSwipe 
               background: "transparent",
               color: colors.orange,
               fontSize: "22px",
-              cursor: "pointer",
+              cursor: flipped ? "default" : "pointer",
             }}
           >
             ♥
