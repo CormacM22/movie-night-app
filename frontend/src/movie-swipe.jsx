@@ -192,7 +192,7 @@ function MatchScreen({ movie, onContinue }) {
       <p style={{ color: colors.orange, fontFamily: "'Archivo Black', sans-serif", fontSize: "16px", letterSpacing: "2px", marginBottom: "8px" }}>
         IT'S A MATCH
       </p>
-      <div style={{ width: "220px", height: "340px", marginBottom: "20px" }}>
+      <div style={{ width: "220px", height: "340px", marginBottom: "20px", position: "relative" }}>
         <MovieCard movie={movie} isTop={false} dragX={0} dragRotate={0} />
       </div>
       <h2 style={{ color: colors.text, fontFamily: "'Archivo Black', sans-serif", fontSize: "22px", textTransform: "uppercase" }}>
