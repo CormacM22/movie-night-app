@@ -1,0 +1,24 @@
+{
+  "name": "Movie Night",
+  "short_name": "Movie Night",
+  "description": "Swipe with friends to decide what to watch.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#15131A",
+  "theme_color": "#15131A",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
