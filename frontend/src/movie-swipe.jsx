@@ -26,6 +26,32 @@ function gradientFor(id) {
   return GRADIENTS[n % GRADIENTS.length];
 }
 
+function HomeButton({ onClick, style }) {
+  return (
+    <button
+      onClick={onClick}
+      aria-label="Leave room"
+      style={{
+        width: "38px",
+        height: "38px",
+        borderRadius: "50%",
+        border: `1px solid ${colors.border}`,
+        background: colors.surface,
+        color: colors.text,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        cursor: "pointer",
+        ...style,
+      }}
+    >
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 9.5 12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1Z" />
+      </svg>
+    </button>
+  );
+}
+
 function MovieCard({ movie, isTop, dragX, dragRotate, flipped, onToggleFlip }) {
   const showBack = isTop && flipped;
 
@@ -267,7 +293,7 @@ function MovieCard({ movie, isTop, dragX, dragRotate, flipped, onToggleFlip }) {
   );
 }
 
-function MatchScreen({ movie, onContinue }) {
+function MatchScreen({ movie, onGoHome }) {
   return (
     <div
       style={{
@@ -283,8 +309,11 @@ function MatchScreen({ movie, onContinue }) {
         boxSizing: "border-box",
         fontFamily: "'Inter', sans-serif",
         textAlign: "center",
+        position: "relative",
       }}
     >
+      <HomeButton onClick={onGoHome} style={{ position: "absolute", top: "max(20px, env(safe-area-inset-top))", left: "20px" }} />
+
       <p style={{ color: colors.orange, fontFamily: "'Archivo Black', sans-serif", fontSize: "16px", letterSpacing: "2px", marginBottom: "8px" }}>
         IT'S A MATCH
       </p>
@@ -294,12 +323,29 @@ function MatchScreen({ movie, onContinue }) {
       <h2 style={{ color: colors.text, fontFamily: "'Archivo Black', sans-serif", fontSize: "22px", textTransform: "uppercase" }}>
         {movie.title}
       </h2>
-      <p style={{ color: colors.muted, fontSize: "14px", marginTop: "4px" }}>Everyone agreed — go press play.</p>
+      <p style={{ color: colors.muted, fontSize: "14px", marginTop: "4px", marginBottom: "24px" }}>Everyone agreed — go press play.</p>
+
+      <button
+        onClick={onGoHome}
+        style={{
+          padding: "12px 24px",
+          borderRadius: "10px",
+          border: "none",
+          background: colors.orange,
+          color: "#15131A",
+          fontFamily: "'Archivo Black', sans-serif",
+          fontSize: "13px",
+          letterSpacing: "0.5px",
+          cursor: "pointer",
+        }}
+      >
+        START A NEW ROOM
+      </button>
     </div>
   );
 }
 
-function NoMatchScreen({ leaderboard }) {
+function NoMatchScreen({ leaderboard, onGoHome }) {
   return (
     <div
       style={{
@@ -315,15 +361,18 @@ function NoMatchScreen({ leaderboard }) {
         boxSizing: "border-box",
         fontFamily: "'Inter', sans-serif",
         textAlign: "center",
+        position: "relative",
       }}
     >
+      <HomeButton onClick={onGoHome} style={{ position: "absolute", top: "max(20px, env(safe-area-inset-top))", left: "20px" }} />
+
       <p style={{ color: colors.text, fontFamily: "'Archivo Black', sans-serif", fontSize: "20px", marginBottom: "8px" }}>
         NO UNANIMOUS PICK
       </p>
       <p style={{ color: colors.muted, fontSize: "14px", marginBottom: "24px" }}>
         Here's what got the most votes — settle it from here.
       </p>
-      <div style={{ width: "100%", maxWidth: "320px", display: "flex", flexDirection: "column", gap: "10px" }}>
+      <div style={{ width: "100%", maxWidth: "320px", display: "flex", flexDirection: "column", gap: "10px", marginBottom: "24px" }}>
         {leaderboard.map((entry, i) => (
           <div
             key={entry.movie.id}
@@ -350,19 +399,42 @@ function NoMatchScreen({ leaderboard }) {
           </div>
         ))}
       </div>
+
+      <button
+        onClick={onGoHome}
+        style={{
+          padding: "12px 24px",
+          borderRadius: "10px",
+          border: "none",
+          background: colors.orange,
+          color: "#15131A",
+          fontFamily: "'Archivo Black', sans-serif",
+          fontSize: "13px",
+          letterSpacing: "0.5px",
+          cursor: "pointer",
+        }}
+      >
+        START A NEW ROOM
+      </button>
     </div>
   );
 }
 
-export default function MovieSwipe({ deck, activeCount, match, noMatch, onSwipe }) {
+export default function MovieSwipe({ deck, activeCount, match, noMatch, onSwipe, onGoHome }) {
   const [localDeck, setLocalDeck] = useState(deck);
   const [dragX, setDragX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [flipped, setFlipped] = useState(false);
   const startX = useRef(0);
 
-  if (match) return <MatchScreen movie={match} />;
-  if (noMatch) return <NoMatchScreen leaderboard={noMatch} />;
+  if (match) return <MatchScreen movie={match} onGoHome={onGoHome} />;
+  if (noMatch) return <NoMatchScreen leaderboard={noMatch} onGoHome={onGoHome} />;
+
+  const handleLeave = () => {
+    if (window.confirm("Leave this room? You'll lose your spot in the deck.")) {
+      onGoHome();
+    }
+  };
 
   const handleStart = (clientX) => {
     setIsDragging(true);
@@ -415,6 +487,7 @@ export default function MovieSwipe({ deck, activeCount, match, noMatch, onSwipe 
         boxSizing: "border-box",
         fontFamily: "'Inter', sans-serif",
         overscrollBehavior: "none",
+        position: "relative",
       }}
     >
       <style>{`
@@ -424,6 +497,11 @@ export default function MovieSwipe({ deck, activeCount, match, noMatch, onSwipe 
           touch-action: manipulation;
         }
       `}</style>
+
+      <HomeButton
+        onClick={handleLeave}
+        style={{ position: "absolute", top: "max(32px, calc(env(safe-area-inset-top) + 16px))", left: "16px" }}
+      />
 
       <div style={{ textAlign: "center", marginBottom: "28px" }}>
         <h1

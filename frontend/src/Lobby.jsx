@@ -24,7 +24,7 @@ const inputStyle = {
   boxSizing: "border-box",
 };
 
-const buttonStyle = (bg) => ({
+const buttonStyle = (bg, disabled = false) => ({
   width: "100%",
   padding: "13px",
   borderRadius: "10px",
@@ -34,8 +34,9 @@ const buttonStyle = (bg) => ({
   fontFamily: "'Archivo Black', sans-serif",
   fontSize: "14px",
   letterSpacing: "0.5px",
-  cursor: "pointer",
+  cursor: disabled ? "default" : "pointer",
   marginTop: "10px",
+  opacity: disabled ? 0.4 : 1,
 });
 
 const chipStyle = (selected) => ({
@@ -173,12 +174,19 @@ export default function Lobby({ onJoined }) {
               </div>
             )}
 
-            <button style={buttonStyle(colors.orange)} onClick={handleCreate} disabled={loading}>
+            <button
+              style={buttonStyle(colors.orange, !name.trim() || loading)}
+              onClick={handleCreate}
+              disabled={!name.trim() || loading}
+            >
               {loading ? "CREATING..." : "CREATE ROOM"}
             </button>
             <button
               style={{ ...buttonStyle("transparent"), color: colors.muted, border: `1px solid ${colors.border}` }}
-              onClick={() => setMode("choose")}
+              onClick={() => {
+                setError("");
+                setMode("choose");
+              }}
             >
               BACK
             </button>
@@ -202,11 +210,21 @@ export default function Lobby({ onJoined }) {
               {createdCode}
             </p>
             <button
-              style={buttonStyle(colors.orange)}
+              style={buttonStyle(colors.orange, loading)}
               onClick={() => completeJoin(createdCode)}
               disabled={loading}
             >
               {loading ? "JOINING..." : "ENTER ROOM"}
+            </button>
+            <button
+              style={{ ...buttonStyle("transparent"), color: colors.muted, border: `1px solid ${colors.border}` }}
+              onClick={() => {
+                setCreatedCode(null);
+                setError("");
+                setMode("choose");
+              }}
+            >
+              BACK
             </button>
           </div>
         )}
@@ -226,12 +244,19 @@ export default function Lobby({ onJoined }) {
               maxLength={4}
               onChange={(e) => setCode(e.target.value)}
             />
-            <button style={buttonStyle(colors.blue)} onClick={() => completeJoin(code)} disabled={loading}>
+            <button
+              style={buttonStyle(colors.blue, !name.trim() || !code.trim() || loading)}
+              onClick={() => completeJoin(code)}
+              disabled={!name.trim() || !code.trim() || loading}
+            >
               {loading ? "JOINING..." : "JOIN"}
             </button>
             <button
               style={{ ...buttonStyle("transparent"), color: colors.muted, border: `1px solid ${colors.border}` }}
-              onClick={() => setMode("choose")}
+              onClick={() => {
+                setError("");
+                setMode("choose");
+              }}
             >
               BACK
             </button>
