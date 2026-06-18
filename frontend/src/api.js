@@ -1,7 +1,9 @@
 // Talks to the FastAPI backend's REST endpoints (session create/join).
 // WebSocket connection logic lives separately in useMovieSocket.js.
 
-const API_BASE = "http://127.0.0.1:8000";
+// Reads from a .env file (VITE_API_BASE=https://your-backend.onrender.com)
+// so the same code works locally (falls back to 127.0.0.1) and in production.
+const API_BASE = import.meta.env.VITE_API_BASE || "http://127.0.0.1:8000";
 
 export async function fetchGenres() {
   const res = await fetch(`${API_BASE}/genres`);
@@ -34,5 +36,8 @@ export async function joinSession(code, name) {
 }
 
 export function wsUrl(code, participantId) {
-  return `ws://127.0.0.1:8000/ws/${code}/${participantId}`;
+  // Derive the ws(s):// URL from API_BASE so we don't need a second env
+  // var — http:// becomes ws://, https:// becomes wss:// automatically.
+  const wsBase = API_BASE.replace(/^http/, "ws");
+  return `${wsBase}/ws/${code}/${participantId}`;
 }
