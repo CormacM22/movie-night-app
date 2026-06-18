@@ -41,6 +41,17 @@ class JoinSessionRequest(BaseModel):
     name: str
 
 
+def watch_providers_to_dict(wp):
+    if wp is None:
+        return None
+    provider_dict = lambda p: {"name": p.name, "logo_url": p.logo_url}
+    return {
+        "flatrate": [provider_dict(p) for p in wp.flatrate],
+        "rent": [provider_dict(p) for p in wp.rent],
+        "buy": [provider_dict(p) for p in wp.buy],
+    }
+
+
 def movie_to_dict(movie):
     return {
         "id": movie.id,
@@ -51,6 +62,7 @@ def movie_to_dict(movie):
         "runtime_minutes": movie.runtime_minutes,
         "poster_url": movie.poster_url,
         "overview": movie.overview,
+        "watch_providers": watch_providers_to_dict(movie.watch_providers),
     }
 
 

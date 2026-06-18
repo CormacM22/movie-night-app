@@ -6,6 +6,7 @@ Genre IDs from TMDB are mapped to readable names via a small cache fetched
 once at startup, since /discover/movie only returns genre_ids, not names.
 """
 
+import asyncio
 import os
 from datetime import date, timedelta
 from typing import List, Optional
@@ -13,13 +14,21 @@ from typing import List, Optional
 import httpx
 from dotenv import load_dotenv
 
-from models import Movie
+from models import Movie, WatchProvider, WatchProviders
 
 load_dotenv()
 
 TMDB_API_KEY = os.getenv("TMDB_API_KEY")
 TMDB_BASE_URL = "https://api.themoviedb.org/3"
 POSTER_BASE_URL = "https://image.tmdb.org/t/p/w500"
+PROVIDER_LOGO_BASE_URL = "https://image.tmdb.org/t/p/w92"  # small size, just for badges
+
+# Region used for watch-provider lookups. Availability genuinely differs by
+# country (a movie on Netflix in the US may not be on Netflix in Ireland),
+# so this should match where the group actually is. Hardcoded for now since
+# this app is built for one friend group in one country; would need to
+# become a per-session setting to support groups in different regions.
+WATCH_REGION = "IE"
 
 # TMDB has no "is this still in theaters" flag, so we approximate it by
 # release date: movies typically hit digital/streaming 90-120 days after
@@ -71,6 +80,42 @@ async def _get_runtime(client: httpx.AsyncClient, movie_id: int) -> int:
         return resp.json().get("runtime") or 0
     except httpx.HTTPError:
         return 0
+
+
+def _parse_provider_list(raw_list) -> List[WatchProvider]:
+    providers = []
+    for p in raw_list or []:
+        logo_path = p.get("logo_path")
+        providers.append(
+            WatchProvider(
+                name=p.get("provider_name", "Unknown"),
+                logo_url=f"{PROVIDER_LOGO_BASE_URL}{logo_path}" if logo_path else None,
+            )
+        )
+    return providers
+
+
+async def _get_watch_providers(client: httpx.AsyncClient, movie_id: int) -> Optional[WatchProviders]:
+    """Fetches where a movie can be streamed/rented/bought in WATCH_REGION.
+    Returns None on any failure or if the region has no listed providers —
+    the frontend treats that as 'no badges to show', not an error."""
+    try:
+        resp = await client.get(
+            f"{TMDB_BASE_URL}/movie/{movie_id}/watch/providers",
+            params={"api_key": TMDB_API_KEY},
+        )
+        resp.raise_for_status()
+        region_data = resp.json().get("results", {}).get(WATCH_REGION)
+        if not region_data:
+            return None
+
+        return WatchProviders(
+            flatrate=_parse_provider_list(region_data.get("flatrate")),
+            rent=_parse_provider_list(region_data.get("rent")),
+            buy=_parse_provider_list(region_data.get("buy")),
+        )
+    except httpx.HTTPError:
+        return None
 
 
 async def fetch_movie_deck(
@@ -126,10 +171,15 @@ async def fetch_movie_deck(
             poster_path = item.get("poster_path")
             poster_url = f"{POSTER_BASE_URL}{poster_path}" if poster_path else None
 
-            runtime = await _get_runtime(client, item["id"])
-
             # overview comes straight from /discover/movie, no extra call needed
             overview = (item.get("overview") or "").strip() or None
+
+            # runtime and watch providers each need their own API call;
+            # run them concurrently so we're not paying for both sequentially
+            runtime, watch_providers = await asyncio.gather(
+                _get_runtime(client, item["id"]),
+                _get_watch_providers(client, item["id"]),
+            )
 
             movies.append(
                 Movie(
@@ -141,6 +191,7 @@ async def fetch_movie_deck(
                     runtime_minutes=runtime,
                     poster_url=poster_url,
                     overview=overview,
+                    watch_providers=watch_providers,
                 )
             )
 

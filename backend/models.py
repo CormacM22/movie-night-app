@@ -18,6 +18,19 @@ class SwipeDirection(str, Enum):
 
 
 @dataclass
+class WatchProvider:
+    name: str
+    logo_url: Optional[str] = None
+
+
+@dataclass
+class WatchProviders:
+    flatrate: List[WatchProvider] = field(default_factory=list)  # subscription (Netflix, Prime, etc.)
+    rent: List[WatchProvider] = field(default_factory=list)
+    buy: List[WatchProvider] = field(default_factory=list)
+
+
+@dataclass
 class Movie:
     id: str
     title: str
@@ -27,6 +40,7 @@ class Movie:
     runtime_minutes: int
     poster_url: Optional[str] = None
     overview: Optional[str] = None
+    watch_providers: Optional[WatchProviders] = None
 
 
 @dataclass

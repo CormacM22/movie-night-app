@@ -55,6 +55,12 @@ function HomeButton({ onClick, style }) {
 function MovieCard({ movie, isTop, dragX, dragRotate, flipped, onToggleFlip }) {
   const showBack = isTop && flipped;
 
+  const flatrate = movie.watch_providers?.flatrate || [];
+  const rentOrBuy = [...(movie.watch_providers?.rent || []), ...(movie.watch_providers?.buy || [])];
+  // de-dupe rent/buy by name (a service often appears in both lists)
+  const rentOrBuyUnique = Array.from(new Map(rentOrBuy.map((p) => [p.name, p])).values());
+  const hasAnyProvider = flatrate.length > 0 || rentOrBuyUnique.length > 0;
+
   return (
     <div
       style={{
@@ -121,6 +127,48 @@ function MovieCard({ movie, isTop, dragX, dragRotate, flipped, onToggleFlip }) {
             >
               {movie.overview || "No synopsis available for this one — guess you'll have to find out together."}
             </p>
+
+            {hasAnyProvider && (
+              <div style={{ marginTop: "16px" }}>
+                <p style={{ color: colors.muted, fontSize: "10px", letterSpacing: "1px", margin: "0 0 8px", fontFamily: "'Inter', sans-serif" }}>
+                  WHERE TO WATCH
+                </p>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                  {flatrate.map((p) => (
+                    <span
+                      key={`flat-${p.name}`}
+                      style={{
+                        fontFamily: "'Inter', sans-serif",
+                        fontSize: "11px",
+                        fontWeight: 600,
+                        padding: "3px 9px",
+                        borderRadius: "20px",
+                        background: colors.orange,
+                        color: "#15131A",
+                      }}
+                    >
+                      {p.name}
+                    </span>
+                  ))}
+                  {rentOrBuyUnique.map((p) => (
+                    <span
+                      key={`rb-${p.name}`}
+                      style={{
+                        fontFamily: "'Inter', sans-serif",
+                        fontSize: "11px",
+                        fontWeight: 500,
+                        padding: "3px 9px",
+                        borderRadius: "20px",
+                        border: `1px solid ${colors.border}`,
+                        color: colors.muted,
+                      }}
+                    >
+                      {p.name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
           <p
             style={{
@@ -286,6 +334,44 @@ function MovieCard({ movie, isTop, dragX, dragRotate, flipped, onToggleFlip }) {
                 {movie.runtime_minutes ? `${movie.runtime_minutes} min` : "Runtime unknown"}
               </div>
             </div>
+
+            {hasAnyProvider && (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginTop: "2px" }}>
+                {flatrate.slice(0, 3).map((p) => (
+                  <span
+                    key={`flat-${p.name}`}
+                    style={{
+                      fontFamily: "'Inter', sans-serif",
+                      fontSize: "11px",
+                      fontWeight: 600,
+                      padding: "3px 9px",
+                      borderRadius: "20px",
+                      background: colors.orange,
+                      color: "#15131A",
+                    }}
+                  >
+                    {p.name}
+                  </span>
+                ))}
+                {flatrate.length === 0 &&
+                  rentOrBuyUnique.slice(0, 2).map((p) => (
+                    <span
+                      key={`rb-${p.name}`}
+                      style={{
+                        fontFamily: "'Inter', sans-serif",
+                        fontSize: "11px",
+                        fontWeight: 500,
+                        padding: "3px 9px",
+                        borderRadius: "20px",
+                        border: `1px solid ${colors.border}`,
+                        color: colors.muted,
+                      }}
+                    >
+                      {p.name}
+                    </span>
+                  ))}
+              </div>
+            )}
           </div>
         </>
       )}

@@ -28,6 +28,23 @@ FAKE_DISCOVER_RESULTS = {
 
 FAKE_MOVIE_DETAILS = {"runtime": 118}
 
+FAKE_WATCH_PROVIDERS = {
+    "results": {
+        "IE": {
+            "flatrate": [
+                {"provider_name": "Netflix", "logo_path": "/netflix.jpg"},
+            ],
+            "rent": [
+                {"provider_name": "Apple TV", "logo_path": "/appletv.jpg"},
+            ],
+            "buy": [],
+        },
+        "US": {
+            "flatrate": [{"provider_name": "Hulu", "logo_path": "/hulu.jpg"}],
+        },
+    }
+}
+
 
 class FakeResponse:
     def __init__(self, json_data):
@@ -45,6 +62,8 @@ async def fake_get(self, url, params=None, **kwargs):
         return FakeResponse(FAKE_GENRE_LIST)
     if "discover/movie" in url:
         return FakeResponse(FAKE_DISCOVER_RESULTS)
+    if "/movie/999/watch/providers" in url:
+        return FakeResponse(FAKE_WATCH_PROVIDERS)
     if "/movie/999" in url:
         return FakeResponse(FAKE_MOVIE_DETAILS)
     raise ValueError(f"Unexpected URL in test: {url}")
@@ -67,8 +86,35 @@ async def run_test():
     assert m.poster_url == "https://image.tmdb.org/t/p/w500/abc123.jpg"
     assert m.overview == "A test synopsis about things blowing up.", f"Expected overview text, got {m.overview!r}"
 
+    assert m.watch_providers is not None, "Expected watch_providers to be populated"
+    assert len(m.watch_providers.flatrate) == 1
+    assert m.watch_providers.flatrate[0].name == "Netflix"
+    assert m.watch_providers.flatrate[0].logo_url == "https://image.tmdb.org/t/p/w92/netflix.jpg"
+    assert len(m.watch_providers.rent) == 1
+    assert m.watch_providers.rent[0].name == "Apple TV"
+    assert m.watch_providers.buy == [], "Expected empty buy list, not missing/None"
+
     print("✅ tmdb_client normalization test passed!")
     print(f"   {m}")
+
+
+async def run_watch_region_test():
+    """Confirms watch providers are pulled from the configured region (IE),
+    not some other region present in the same API response (e.g. US) —
+    catching a regression where the wrong country key gets used."""
+    tmdb_client._genre_cache = None
+    tmdb_client.TMDB_API_KEY = "fake-key-for-test"
+    assert tmdb_client.WATCH_REGION == "IE", f"Expected WATCH_REGION to be IE, got {tmdb_client.WATCH_REGION}"
+
+    with patch("httpx.AsyncClient.get", new=fake_get):
+        movies = await tmdb_client.fetch_movie_deck()
+
+    wp = movies[0].watch_providers
+    provider_names = [p.name for p in wp.flatrate]
+    assert "Netflix" in provider_names, "Expected IE region's Netflix entry"
+    assert "Hulu" not in provider_names, "Should not pull in US region's Hulu entry"
+
+    print("✅ tmdb_client watch-region test passed!")
 
 
 async def run_filter_params_test():
@@ -112,3 +158,4 @@ async def run_filter_params_test():
 if __name__ == "__main__":
     asyncio.run(run_test())
     asyncio.run(run_filter_params_test())
+    asyncio.run(run_watch_region_test())
