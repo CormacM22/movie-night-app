@@ -7,6 +7,7 @@ export function useMovieSocket(code, participantId) {
   const wsRef = useRef(null);
   const [connected, setConnected] = useState(false);
   const [activeCount, setActiveCount] = useState(1);
+  const [participants, setParticipants] = useState([]); // [{ id, name, connected }]
   const [match, setMatch] = useState(null);
   const [noMatch, setNoMatch] = useState(null);
   const [voteUpdates, setVoteUpdates] = useState({}); // movie_id -> { votes, needed }
@@ -26,6 +27,7 @@ export function useMovieSocket(code, participantId) {
       switch (data.type) {
         case "presence":
           setActiveCount(data.active_count);
+          setParticipants(data.participants || []);
           break;
         case "swipe_update":
           setVoteUpdates((prev) => ({
@@ -55,5 +57,5 @@ export function useMovieSocket(code, participantId) {
     }
   }, []);
 
-  return { connected, activeCount, match, noMatch, voteUpdates, sendSwipe };
+  return { connected, activeCount, participants, match, noMatch, voteUpdates, sendSwipe };
 }

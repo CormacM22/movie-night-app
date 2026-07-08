@@ -10,7 +10,7 @@ export default function App() {
   // (otherwise leftover name/code from the previous round would persist)
   const [lobbyKey, setLobbyKey] = useState(0);
 
-  const { activeCount, match, noMatch, sendSwipe } = useMovieSocket(
+  const { activeCount, participants, match, noMatch, sendSwipe } = useMovieSocket(
     session?.code,
     session?.participantId
   );
@@ -28,6 +28,7 @@ export default function App() {
     <MovieSwipe
       deck={session.deck}
       activeCount={activeCount}
+      participants={participants}
       match={match}
       noMatch={noMatch}
       onSwipe={sendSwipe}
