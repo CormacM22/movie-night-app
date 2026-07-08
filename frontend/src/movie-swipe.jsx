@@ -506,7 +506,7 @@ function NoMatchScreen({ leaderboard, onGoHome }) {
   );
 }
 
-export default function MovieSwipe({ deck, activeCount, match, noMatch, onSwipe, onGoHome }) {
+export default function MovieSwipe({ deck, activeCount, participants, match, noMatch, onSwipe, onGoHome }) {
   const [localDeck, setLocalDeck] = useState(deck);
   const [dragX, setDragX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
@@ -605,6 +605,26 @@ export default function MovieSwipe({ deck, activeCount, match, noMatch, onSwipe,
           {activeCount} {activeCount === 1 ? "person" : "people"} in the room ·{" "}
           {localDeck.length > 0 ? `${localDeck.length} left` : "deck finished"}
         </p>
+        {participants.length > 0 && (
+          <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "6px", marginTop: "10px" }}>
+            {participants.map((p) => (
+              <span
+                key={p.id}
+                style={{
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: "11px",
+                  fontWeight: 500,
+                  padding: "3px 10px",
+                  borderRadius: "20px",
+                  border: `1px solid ${p.connected ? colors.orange : colors.border}`,
+                  color: p.connected ? colors.text : colors.muted,
+                }}
+              >
+                {p.name}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       <div style={{ position: "relative", width: "100%", maxWidth: "340px", height: "540px" }}>
