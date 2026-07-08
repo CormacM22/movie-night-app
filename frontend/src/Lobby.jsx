@@ -61,6 +61,7 @@ export default function Lobby({ onJoined }) {
   const [loading, setLoading] = useState(false);
   const [genres, setGenres] = useState([]);
   const [selectedGenre, setSelectedGenre] = useState(null); // null = any genre
+  const [selectedThreshold, setSelectedThreshold] = useState(1.0);
 
   useEffect(() => {
     fetchGenres().then(setGenres);
@@ -90,7 +91,7 @@ export default function Lobby({ onJoined }) {
     setLoading(true);
     setError("");
     try {
-      const { code: newCode } = await createSession(1.0, selectedGenre);
+      const { code: newCode } = await createSession(selectedThreshold, selectedGenre);
       setCreatedCode(newCode);
     } catch (err) {
       setError("Could not reach the server — is the backend running?");
@@ -173,6 +174,27 @@ export default function Lobby({ onJoined }) {
                 </div>
               </div>
             )}
+
+            <div style={{ marginTop: "16px" }}>
+              <p style={{ color: colors.muted, fontSize: "12px", letterSpacing: "1px", marginBottom: "8px" }}>
+                MATCH WHEN
+              </p>
+              <div style={{ display: "flex", gap: "8px" }}>
+                {[
+                  { label: "MAJORITY", value: 0.5 },
+                  { label: "MOST", value: 0.75 },
+                  { label: "EVERYONE", value: 1.0 },
+                ].map(({ label, value }) => (
+                  <span
+                    key={value}
+                    style={chipStyle(selectedThreshold === value)}
+                    onClick={() => setSelectedThreshold(value)}
+                  >
+                    {label}
+                  </span>
+                ))}
+              </div>
+            </div>
 
             <button
               style={buttonStyle(colors.orange, !name.trim() || loading)}
